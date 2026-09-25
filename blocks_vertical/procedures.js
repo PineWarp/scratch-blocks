@@ -60,7 +60,12 @@ Blockly.ScratchBlocks.ProcedureUtils.callerMutationToDom = function() {
   if (this.return_ !== Blockly.PROCEDURES_CALL_TYPE_STATEMENT) {
     container.setAttribute('return', this.return_);
   }
-  
+
+  // Add global flag to mutation
+  if (this.global_) {
+    container.setAttribute('global', 'true');
+  }
+
   // Add custom color to mutation
   if (this.customColor_) {
     container.setAttribute('customcolor', this.customColor_);
@@ -81,6 +86,7 @@ Blockly.ScratchBlocks.ProcedureUtils.callerDomToMutation = function(xmlElement) 
       JSON.parse(xmlElement.getAttribute('generateshadows'));
   this.argumentIds_ = JSON.parse(xmlElement.getAttribute('argumentids'));
   this.warp_ = JSON.parse(xmlElement.getAttribute('warp'));
+  this.global_ = xmlElement.getAttribute('global') === 'true';
   this.return_ = Blockly.ScratchBlocks.ProcedureUtils.parseReturnMutation(xmlElement);
   
   // Load custom color from mutation
@@ -116,6 +122,11 @@ Blockly.ScratchBlocks.ProcedureUtils.definitionMutationToDom = function(
   container.setAttribute('argumentdefaults',
       JSON.stringify(this.argumentDefaults_));
   container.setAttribute('warp', JSON.stringify(this.warp_));
+
+  // Add global flag to mutation
+  if (this.global_) {
+    container.setAttribute('global', 'true');
+  }
   
   // Add custom color to mutation
   if (this.customColor_) {
@@ -139,6 +150,9 @@ Blockly.ScratchBlocks.ProcedureUtils.definitionMutationToDom = function(
 Blockly.ScratchBlocks.ProcedureUtils.definitionDomToMutation = function(xmlElement) {
   this.procCode_ = xmlElement.getAttribute('proccode');
   this.warp_ = JSON.parse(xmlElement.getAttribute('warp'));
+
+  // Load global flag from mutation
+  this.global_ = xmlElement.getAttribute('global') === 'true';
 
   // Load custom color from mutation
   if (xmlElement.hasAttribute('customcolor')) {
@@ -275,8 +289,18 @@ Blockly.ScratchBlocks.ProcedureUtils.removeAllInputs_ = function() {
  * @this Blockly.Block
  */
 Blockly.ScratchBlocks.ProcedureUtils.createAllInputs_ = function(connectionMap) {
+  // Global (cross-target) procedures show a "[全局]"/"[Global]" badge before
+  // their name on call and prototype blocks. The editable declaration block
+  // keeps the raw name since its global flag is toggled separately in the UI.
+  // The badge appears both in the flyout and on call blocks dropped into the
+  // workspace, so the global nature of a block stays visible wherever it is.
+  var procCode = this.procCode_;
+  if (this.global_ && this.type !== 'procedures_declaration') {
+    procCode = Blockly.Msg.PROCEDURE_GLOBAL_PREFIX + ' ' + procCode;
+  }
+
   // Split the proc into components, by %n, %b, and %s (ignoring escaped).
-  var procComponents = this.procCode_.split(/(?=[^\\]%[nbs])/);
+  var procComponents = procCode.split(/(?=[^\\]%[nbs])/);
   procComponents = procComponents.map(function(c) {
     return c.trim(); // Strip whitespace.
   });
@@ -740,8 +764,8 @@ Blockly.ScratchBlocks.ProcedureUtils.setCustomColor = function(color) {
   this.customColor_ = color;
   if (color && color !== '#FF6680') {
     // Override the default "more" colors with custom color
-    var c = goog.color;
-    var rgb = c.hexToRgb(color);
+    const c = goog.color;
+    const rgb = c.hexToRgb(color);
 
     this.setColour(color,
         c.rgbArrayToHex(c.darken(rgb, 0.1)),
@@ -753,12 +777,12 @@ Blockly.ScratchBlocks.ProcedureUtils.setCustomColor = function(color) {
     var moreColors = Blockly.Colours.more;
     this.setColour(moreColors.primary, moreColors.secondary, moreColors.tertiary, moreColors.quaternary);
   }
-  
+
   // Update all procedure call blocks with the same procCode
   if (this.workspace && this.procCode_) {
     var allBlocks = this.workspace.getAllBlocks();
     var currentProcCode = this.procCode_;
-    
+
     for (var i = 0; i < allBlocks.length; i++) {
       var block = allBlocks[i];
       if ((block.type === 'procedures_call' ||
@@ -769,8 +793,8 @@ Blockly.ScratchBlocks.ProcedureUtils.setCustomColor = function(color) {
         block.customColor_ = color;
         if (color && color !== '#FF6680') {
 
-          var c = goog.color;
-          var rgb = c.hexToRgb(color);
+          const c = goog.color;
+          const rgb = c.hexToRgb(color);
 
           block.setColour(color,
               c.rgbArrayToHex(c.darken(rgb, 0.1)),
@@ -783,6 +807,12 @@ Blockly.ScratchBlocks.ProcedureUtils.setCustomColor = function(color) {
         }
       }
     }
+  }
+
+  var parentBlock = this.getParent();
+  if (parentBlock && parentBlock.type === Blockly.PROCEDURES_DEFINITION_BLOCK_TYPE &&
+    parentBlock.rendered && parentBlock.updateColour) {
+    parentBlock.updateColour();
   }
 };
 
@@ -811,6 +841,24 @@ Blockly.ScratchBlocks.ProcedureUtils.setWarp = function(warp) {
  */
 Blockly.ScratchBlocks.ProcedureUtils.getWarp = function() {
   return this.warp_;
+};
+
+/**
+ * Externally-visible function to set whether this procedure is global.
+ * @param {boolean} global Whether this procedure is global (stored in the stage).
+ * @public
+ */
+Blockly.ScratchBlocks.ProcedureUtils.setGlobal = function(global) {
+  this.global_ = global;
+};
+
+/**
+ * Externally-visible function to get whether this procedure is global.
+ * @return {boolean} Whether this procedure is global (stored in the stage).
+ * @public
+ */
+Blockly.ScratchBlocks.ProcedureUtils.getGlobal = function() {
+  return this.global_;
 };
 
 /**
@@ -954,6 +1002,7 @@ Blockly.Blocks['procedures_call'] = {
     this.procCode_ = '';
     this.argumentIds_ = [];
     this.warp_ = false;
+    this.global_ = false;
     this.return_ = Blockly.PROCEDURES_CALL_TYPE_STATEMENT;
   },
   // Shared.
@@ -966,6 +1015,8 @@ Blockly.Blocks['procedures_call'] = {
   getReturn: Blockly.ScratchBlocks.ProcedureUtils.getReturn,
   setCustomColor: Blockly.ScratchBlocks.ProcedureUtils.setCustomColor,
   getCustomColor: Blockly.ScratchBlocks.ProcedureUtils.getCustomColor,
+  setGlobal: Blockly.ScratchBlocks.ProcedureUtils.setGlobal,
+  getGlobal: Blockly.ScratchBlocks.ProcedureUtils.getGlobal,
 
   // Exist on all three blocks, but have different implementations.
   mutationToDom: Blockly.ScratchBlocks.ProcedureUtils.callerMutationToDom,
@@ -995,6 +1046,7 @@ Blockly.Blocks['procedures_prototype'] = {
     this.argumentIds_ = [];
     this.argumentDefaults_ = [];
     this.warp_ = false;
+    this.global_ = false;
   },
   // Shared.
   getProcCode: Blockly.ScratchBlocks.ProcedureUtils.getProcCode,
@@ -1011,6 +1063,8 @@ Blockly.Blocks['procedures_prototype'] = {
   addProcedureLabel_: Blockly.ScratchBlocks.ProcedureUtils.addLabelField_,
   setCustomColor: Blockly.ScratchBlocks.ProcedureUtils.setCustomColor,
   getCustomColor: Blockly.ScratchBlocks.ProcedureUtils.getCustomColor,
+  setGlobal: Blockly.ScratchBlocks.ProcedureUtils.setGlobal,
+  getGlobal: Blockly.ScratchBlocks.ProcedureUtils.getGlobal,
 
   // Only exists on procedures_prototype.
   createArgumentReporter_: Blockly.ScratchBlocks.ProcedureUtils.createArgumentReporter_,
@@ -1032,6 +1086,7 @@ Blockly.Blocks['procedures_declaration'] = {
     this.argumentIds_ = [];
     this.argumentDefaults_ = [];
     this.warp_ = false;
+    this.global_ = false;
   },
   // Shared.
   getProcCode: Blockly.ScratchBlocks.ProcedureUtils.getProcCode,
@@ -1055,6 +1110,8 @@ Blockly.Blocks['procedures_declaration'] = {
   focusLastEditor_: Blockly.ScratchBlocks.ProcedureUtils.focusLastEditor_,
   getWarp: Blockly.ScratchBlocks.ProcedureUtils.getWarp,
   setWarp: Blockly.ScratchBlocks.ProcedureUtils.setWarp,
+  setGlobal: Blockly.ScratchBlocks.ProcedureUtils.setGlobal,
+  getGlobal: Blockly.ScratchBlocks.ProcedureUtils.getGlobal,
   setCustomColor: Blockly.ScratchBlocks.ProcedureUtils.setCustomColor,
   getCustomColor: Blockly.ScratchBlocks.ProcedureUtils.getCustomColor,
   addLabelExternal: Blockly.ScratchBlocks.ProcedureUtils.addLabelExternal,

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @license
  * Visual Blocks Editor
  *
@@ -28,6 +28,9 @@ goog.provide('Blockly.BubbleDragger');
 
 goog.require('Blockly.Bubble');
 goog.require('Blockly.Events.CommentMove');
+goog.require('Blockly.Events.DragFrameOutside');
+goog.require('Blockly.Events.EndFrameDrag');
+goog.require('Blockly.Events.FrameMove');
 goog.require('Blockly.WorkspaceCommentSvg');
 
 goog.require('goog.math.Coordinate');
@@ -75,6 +78,15 @@ Blockly.BubbleDragger = function(bubble, workspace) {
   this.wouldDeleteBubble_ = false;
 
   /**
+   * Whether the bubble was outside the blocks area on the last drag step.
+   * Only tracked for frames, which can be dropped on the rest of the editor
+   * the way blocks can.
+   * @type {boolean}
+   * @private
+   */
+  this.wasOutside_ = false;
+
+  /**
    * The location of the top left corner of the dragging bubble's body at the
    * beginning of the drag, in workspace coordinates.
    * @type {!goog.math.Coordinate}
@@ -88,7 +100,10 @@ Blockly.BubbleDragger = function(bubble, workspace) {
    * @type {?Blockly.BlockDragSurfaceSvg}
    * @private
    */
-  this.dragSurface_ =
+  // Frames paint behind the blocks, so they stay on the block canvas for the
+  // whole drag rather than being lifted onto the drag surface, which would put
+  // them in front of everything and then drop them on the bubble canvas.
+  this.dragSurface_ = !bubble.isFrame &&
       Blockly.utils.is3dSupported() && !!workspace.getBlockDragSurface() ?
       workspace.getBlockDragSurface() : null;
 };
@@ -141,6 +156,15 @@ Blockly.BubbleDragger.prototype.dragBubble = function(e, currentDragDeltaXY) {
   var newLoc = goog.math.Coordinate.sum(this.startXY_, delta);
 
   this.draggingBubble_.moveDuringDrag(this.dragSurface_, newLoc);
+
+  if (this.draggingBubble_.isFrame) {
+    var isOutside = !this.workspace_.isInsideBlocksArea(e);
+    if (isOutside !== this.wasOutside_) {
+      Blockly.Events.fire(
+          new Blockly.Events.DragFrameOutside(this.draggingBubble_, isOutside));
+      this.wasOutside_ = isOutside;
+    }
+  }
 
   if (this.draggingBubble_.isDeletable()) {
     this.deleteArea_ =  this.workspace_.isDeleteArea(e);
@@ -209,6 +233,14 @@ Blockly.BubbleDragger.prototype.endBubbleDrag = function(
 
   // Move the bubble to its final location.
   this.draggingBubble_.moveTo(newLoc.x, newLoc.y);
+
+  if (this.draggingBubble_.isFrame) {
+    // Fired before the frame can be deleted, while the scripts it carries are
+    // still around to be copied out of it.
+    Blockly.Events.fire(new Blockly.Events.EndFrameDrag(
+        this.draggingBubble_, this.wasOutside_));
+  }
+
   var deleted = this.maybeDeleteBubble_();
 
   if (!deleted) {
@@ -236,7 +268,9 @@ Blockly.BubbleDragger.prototype.endBubbleDrag = function(
  */
 Blockly.BubbleDragger.prototype.fireMoveEvent_ = function() {
   var event = null;
-  if (this.draggingBubble_.isComment) {
+  if (this.draggingBubble_.isFrame) {
+    event = new Blockly.Events.FrameMove(this.draggingBubble_);
+  } else if (this.draggingBubble_.isComment) {
     event = new Blockly.Events.CommentMove(this.draggingBubble_);
   } else if (this.draggingBubble_ instanceof Blockly.ScratchBubble) {
     event = new Blockly.Events.CommentMove(this.draggingBubble_.comment);

@@ -1,4 +1,4 @@
-/* eslint-env node */
+﻿/* eslint-env node */
 
 // There are a lot of different ways that people can install python, and there is no
 // universal name that they use for the actual executable. We can already assume
@@ -6,6 +6,9 @@
 
 var child_process = require('child_process');
 var _which = require('which');
+
+process.env.PYTHONUTF8 = '1';
+process.env.PYTHONIOENCODING = 'utf-8';
 
 function which(command) {
   return _which.sync(command, {

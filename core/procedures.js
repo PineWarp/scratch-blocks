@@ -47,10 +47,27 @@ Blockly.Procedures.NAME_TYPE = Blockly.PROCEDURE_CATEGORY_NAME;
 
 /**
  * Set of open procedure folders.
- * @type {!Object.<string, boolean>}
+ * @type {!Set.<string>}
  * @private
  */
-Blockly.Procedures.openFolders_ = {};
+Blockly.Procedures.openFolders_ = new Set();
+
+/**
+ * Global (cross-target) procedure mutations provided by the host (scratch-gui).
+ * These are procedures whose definitions live in the stage but should be
+ * callable from every target. Each entry is a `<mutation>` DOM element.
+ * @type {!Array.<Element>}
+ */
+Blockly.Procedures.globalProcedureMutations = [];
+
+/**
+ * Replace the set of global procedure mutations shown in every target's flyout.
+ * @param {!Array.<Element>} mutations Array of `<mutation>` DOM elements.
+ * @public
+ */
+Blockly.Procedures.setGlobalProcedureMutations = function(mutations) {
+  Blockly.Procedures.globalProcedureMutations = mutations || [];
+};
 
 /**
  * Check if a folder is currently open.
@@ -58,7 +75,7 @@ Blockly.Procedures.openFolders_ = {};
  * @return {boolean} True if the folder is open.
  */
 Blockly.Procedures.isFolderOpen = function(folderName) {
-  return Blockly.Procedures.openFolders_.hasOwnProperty(folderName);
+  return Blockly.Procedures.openFolders_.has(folderName);
 };
 
 /**
@@ -68,9 +85,9 @@ Blockly.Procedures.isFolderOpen = function(folderName) {
  */
 Blockly.Procedures.setFolderOpen = function(folderName, isOpen) {
   if (isOpen) {
-    Blockly.Procedures.openFolders_[folderName] = true;
+    Blockly.Procedures.openFolders_.add(folderName);
   } else {
-    delete Blockly.Procedures.openFolders_[folderName];
+    Blockly.Procedures.openFolders_.delete(folderName);
   }
   // Refresh the flyout to show the updated state
   var workspace = Blockly.getMainWorkspace();
@@ -129,13 +146,78 @@ Blockly.Procedures.allProcedures = function(root) {
 Blockly.Procedures.allProcedureMutations = function(root) {
   var blocks = root.getAllBlocks();
   var mutations = [];
+  var seen = Object.create(null);
   for (var i = 0; i < blocks.length; i++) {
     if (blocks[i].type == Blockly.PROCEDURES_PROTOTYPE_BLOCK_TYPE) {
       var mutation = blocks[i].mutationToDom(/* opt_generateShadows */ true);
       if (mutation) {
+        seen[mutation.getAttribute('proccode')] = true;
         mutations.push(mutation);
       }
     }
+  }
+  var pending = Blockly.Procedures.deferredProcedureMutations_(root);
+  for (var j = 0; j < pending.length; j++) {
+    if (!seen[pending[j].getAttribute('proccode')]) {
+      mutations.push(pending[j]);
+    }
+  }
+  return mutations;
+};
+
+/**
+ * Find procedure definition mutations in scripts that a deferred workspace load
+ * has not materialized into blocks yet.
+ * @param {!Blockly.Workspace} root Root workspace.
+ * @return {!Array.<Element>} Array of mutation xml elements.
+ * @private
+ */
+Blockly.Procedures.deferredProcedureMutations_ = function(root) {
+  var mutations = [];
+  if (!root.getDeferredScripts) {
+    return mutations;
+  }
+  var scripts = root.getDeferredScripts();
+  for (var i = 0; i < scripts.length; i++) {
+    var prototypeMutation = null;
+    var hasReturn = false;
+    if (scripts[i].desc) {
+      Blockly.Xml.forEachDescBlock(scripts[i].desc, scripts[i].ctx, function(d) {
+        if (d.opcode == Blockly.PROCEDURES_PROTOTYPE_BLOCK_TYPE && d.mutation) {
+          prototypeMutation = Blockly.Xml.mutationDescToDom_(d.mutation);
+        } else if (d.opcode == Blockly.PROCEDURES_RETURN_BLOCK_TYPE) {
+          hasReturn = true;
+        }
+      });
+    } else {
+      var xmlBlocks = scripts[i].xmlNode.getElementsByTagName('block');
+      for (var j = 0; j < xmlBlocks.length; j++) {
+        var type = xmlBlocks[j].getAttribute('type');
+        if (type == Blockly.PROCEDURES_PROTOTYPE_BLOCK_TYPE) {
+          var children = xmlBlocks[j].childNodes;
+          for (var k = 0; k < children.length; k++) {
+            if (children[k].nodeName.toLowerCase() == 'mutation') {
+              prototypeMutation = children[k];
+              break;
+            }
+          }
+        } else if (type == Blockly.PROCEDURES_RETURN_BLOCK_TYPE) {
+          hasReturn = true;
+        }
+      }
+    }
+    if (!prototypeMutation) {
+      continue;
+    }
+    var mutation = prototypeMutation.cloneNode(false);
+    mutation.setAttribute('generateshadows', true);
+    if (hasReturn) {
+      // ponytail: boolean-returning definitions show as round reporters until the
+      // script renders and the toolbox refreshes; the XML alone doesn't carry the
+      // output shape. Harmless while Blockly.Procedures.ENFORCE_TYPES is false.
+      mutation.setAttribute('return', Blockly.PROCEDURES_CALL_TYPE_REPORTER);
+    }
+    mutations.push(mutation);
   }
   return mutations;
 };
@@ -218,6 +300,24 @@ Blockly.Procedures.isLegalName_ = function(name, workspace, opt_exclude) {
  * @return {boolean} True if the name is used, otherwise return false.
  */
 Blockly.Procedures.isNameUsed = function(name, workspace, opt_exclude) {
+  if (workspace.materializeAllScripts) {
+    workspace.materializeAllScripts();
+  }
+
+  // Name of the block being renamed (if any), so a global procedure can keep
+  // its own name without colliding with itself in the global check below.
+  var excludeProcCode = null;
+  if (opt_exclude) {
+    if (opt_exclude.getProcCode) {
+      excludeProcCode = opt_exclude.getProcCode();
+    } else if (opt_exclude.getProcedureDef) {
+      var excludeDef = opt_exclude.getProcedureDef();
+      if (excludeDef) {
+        excludeProcCode = excludeDef[0];
+      }
+    }
+  }
+
   var blocks = workspace.getAllBlocks();
   // Iterate through every block and check the name.
   for (var i = 0; i < blocks.length; i++) {
@@ -227,11 +327,23 @@ Blockly.Procedures.isNameUsed = function(name, workspace, opt_exclude) {
     if (blocks[i].getProcedureDef) {
       var procName = blocks[i].getProcedureDef();
       if (Blockly.Names.equals(procName[0], name)) {
-        return false;
+        return true;
       }
     }
   }
-  return true;
+
+  // Also check global (cross-target) procedures stored in the stage, so a
+  // sprite cannot create a custom block whose name collides with a global one.
+  var globalMutations = Blockly.Procedures.globalProcedureMutations || [];
+  for (var j = 0; j < globalMutations.length; j++) {
+    var globalProcCode = globalMutations[j].getAttribute('proccode');
+    if (Blockly.Names.equals(globalProcCode, name) &&
+        !(excludeProcCode && Blockly.Names.equals(globalProcCode, excludeProcCode))) {
+      return true;
+    }
+  }
+
+  return false;
 };
 
 /**
@@ -271,6 +383,26 @@ Blockly.Procedures.flyoutCategory = function(workspace) {
 
   // Create call blocks for each procedure defined in the workspace
   var mutations = Blockly.Procedures.allProcedureMutations(workspace);
+  mutations = Blockly.Procedures.sortProcedureMutations_(mutations);
+
+  // Merge in global (cross-target) procedures defined in the stage, so that
+  // they can be called from any target. Skip any whose procCode is already
+  // present (e.g. when the stage itself is the current target).
+  var seenProcCodes = {};
+  for (var si = 0; si < mutations.length; si++) {
+    seenProcCodes[mutations[si].getAttribute('proccode')] = true;
+  }
+  var globalMutations = Blockly.Procedures.globalProcedureMutations || [];
+  for (var gi = 0; gi < globalMutations.length; gi++) {
+    var globalMutation = globalMutations[gi];
+    var globalProcCode = globalMutation.getAttribute('proccode');
+    if (!seenProcCodes[globalProcCode]) {
+      var clonedGlobalMutation = globalMutation.cloneNode(false);
+      clonedGlobalMutation.setAttribute('generateshadows', true);
+      mutations.push(clonedGlobalMutation);
+      seenProcCodes[globalProcCode] = true;
+    }
+  }
   mutations = Blockly.Procedures.sortProcedureMutations_(mutations);
   
   // Group procedures by folder
@@ -402,6 +534,11 @@ Blockly.Procedures.addCreateButton_ = function(workspace, xmlList) {
 Blockly.Procedures.getCallers = function(name, ws, definitionRoot,
     allowRecursive) {
   var allBlocks = [];
+  // Callers in scripts that are not rendered still have to be found: this is
+  // what renaming a procedure updates, and what refuses to delete a used one.
+  if (ws.materializeAllScripts) {
+    ws.materializeAllScripts();
+  }
   var topBlocks = ws.getTopBlocks();
 
   // Start by deciding which stacks to investigate.
@@ -461,6 +598,25 @@ Blockly.Procedures.mutateCallersAndPrototype = function(name, ws, mutation) {
   } else {
     alert('No define block on workspace'); // TODO decide what to do about this.
   }
+};
+
+/**
+ * Find the global procedure mutation for the given procCode. Global
+ * (cross-target) procedures are defined in the stage and their mutations are
+ * collected by the host (scratch-gui) into globalProcedureMutations.
+ * @param {string} procCode The identifier of the procedure.
+ * @return {?Element} The mutation DOM element, or null if not found.
+ * @package
+ */
+Blockly.Procedures.getGlobalProcedureMutation = function(procCode) {
+  var globalMutations = Blockly.Procedures.globalProcedureMutations || [];
+  for (var i = 0; i < globalMutations.length; i++) {
+    if (Blockly.Names.equals(
+        globalMutations[i].getAttribute('proccode'), procCode)) {
+      return globalMutations[i];
+    }
+  }
+  return null;
 };
 
 /**
@@ -595,10 +751,27 @@ Blockly.Procedures.editProcedureCallback_ = function(block) {
   } else if (block.type == Blockly.PROCEDURES_CALL_BLOCK_TYPE) {
     // This is a call block, find the prototype corresponding to the procCode.
     // Make sure to search the correct workspace, call block can be in flyout.
+    var callProcCode = block.getProcCode();
     var workspaceToSearch = block.workspace.isFlyout ?
         block.workspace.targetWorkspace : block.workspace;
     block = Blockly.Procedures.getPrototypeBlock(
-        block.getProcCode(), workspaceToSearch);
+        callProcCode, workspaceToSearch);
+    // A global (cross-target) procedure is defined in the stage, so its
+    // prototype is not present in a sprite's workspace. Fall back to the
+    // global procedure mutations collected by the host so the editor can
+    // still be opened from any target.
+    if (!block) {
+      var globalMutation = Blockly.Procedures.getGlobalProcedureMutation(
+          callProcCode);
+      if (globalMutation) {
+        Blockly.Procedures.externalProcedureDefCallback(
+            globalMutation,
+            Blockly.Procedures.editGlobalProcedureCallbackFactory_(
+                callProcCode, workspaceToSearch)
+        );
+        return;
+      }
+    }
   }
   // Block now refers to the procedure prototype block, it is safe to proceed.
   Blockly.Procedures.externalProcedureDefCallback(
@@ -618,6 +791,47 @@ Blockly.Procedures.editProcedureCallbackFactory_ = function(block) {
     if (mutation) {
       Blockly.Procedures.mutateCallersAndPrototype(block.getProcCode(),
           block.workspace, mutation);
+    }
+  };
+};
+
+/**
+ * Callback to apply an edit to a global (cross-target) procedure. The host
+ * (scratch-gui) overrides this to update the stage definition and broadcast
+ * the change to every target's flyout/workspace.
+ * @param {string} procCode The old procCode of the procedure being edited.
+ * @param {!Element} mutation The new mutation for the procedure.
+ * @param {!Blockly.Workspace} workspace The workspace the edit originated from.
+ * @public
+ */
+Blockly.Procedures.externalGlobalProcedureEditCallback =
+    function(procCode, mutation, workspace) {
+  // Delegate to the workspace-level path when the prototype is available here
+  // (e.g. when editing from the stage itself), so callers in this workspace
+  // stay in sync through the usual mutateCallersAndPrototype flow.
+  var prototypeBlock = Blockly.Procedures.getPrototypeBlock(procCode, workspace);
+  if (prototypeBlock) {
+    Blockly.Procedures.mutateCallersAndPrototype(procCode, workspace, mutation);
+    return;
+  }
+  alert('External global procedure editor must override Blockly.Procedures.externalGlobalProcedureEditCallback');
+};
+
+/**
+ * Callback factory for editing a global (cross-target) custom procedure whose
+ * definition lives in the stage. Editing can be initiated from any target;
+ * the mutation is applied through the host-provided global edit callback.
+ * @param {string} procCode The procCode of the procedure being edited.
+ * @param {!Blockly.Workspace} workspace The workspace the edit originated from.
+ * @return {function(?Element)} Callback for editing the global procedure.
+ * @private
+ */
+Blockly.Procedures.editGlobalProcedureCallbackFactory_ =
+    function(procCode, workspace) {
+  return function(mutation) {
+    if (mutation) {
+      Blockly.Procedures.externalGlobalProcedureEditCallback(
+          procCode, mutation, workspace);
     }
   };
 };

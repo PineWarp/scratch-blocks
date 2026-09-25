@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @license
  * Visual Blocks Editor
  *
@@ -281,7 +281,7 @@ Blockly.Blocks['control_case'] = {
           "name": "SUBSTACK"
         }
       ],
-      "message2": "%1",
+      "message2": Blockly.Msg.CONTROL_BREAK,
       "inputsInline": true,
       "previousStatement": null,
       "nextStatement": null,
@@ -322,27 +322,6 @@ Blockly.Blocks['control_default'] = {
       "inputsInline": true,
       "previousStatement": null,
       "nextStatement": null,
-      "category": Blockly.Categories.control,
-      "colour": Blockly.Colours.control.primary,
-      "colourSecondary": Blockly.Colours.control.secondary,
-      "colourTertiary": Blockly.Colours.control.tertiary,
-      "colourQuaternary": Blockly.Colours.control.quaternary
-    });
-  }
-};
-
-Blockly.Blocks['control_continue'] = {
-  /**
-   * Block for continue statement.
-   * @this Blockly.Block
-   */
-  init: function() {
-    this.jsonInit({
-      "id": "control_continue",
-      "message0": Blockly.Msg.CONTROL_CONTINUE,
-      "args0": [],
-      "inputsInline": true,
-      "previousStatement": null,
       "category": Blockly.Categories.control,
       "colour": Blockly.Colours.control.primary,
       "colourSecondary": Blockly.Colours.control.secondary,

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @license
  * Visual Blocks Editor
  *
@@ -250,6 +250,12 @@ Blockly.Input.prototype.init = function() {
 Blockly.Input.prototype.dispose = function() {
   if (this.outlinePath) {
     goog.dom.removeNode(this.outlinePath);
+  }
+  if (this.booleanToggleMouseDownWrapper_) {
+    Blockly.unbindEvent_(this.booleanToggleMouseDownWrapper_);
+  }
+  if (this.booleanToggleMark_) {
+    goog.dom.removeNode(this.booleanToggleMark_);
   }
   for (var i = 0, field; field = this.fieldRow[i]; i++) {
     field.dispose();

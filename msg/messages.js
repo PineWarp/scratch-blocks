@@ -208,6 +208,17 @@ Blockly.Msg.OPERATORS_LETTEROF = 'letter %1 of %2';
 Blockly.Msg.OPERATORS_LETTEROF_APPLE = 'a';
 Blockly.Msg.OPERATORS_LENGTH = 'length of %1';
 Blockly.Msg.OPERATORS_CONTAINS = '%1 contains %2?';
+Blockly.Msg.OPERATORS_LETTERSOF = 'letters %1 to %2 of %3';
+Blockly.Msg.OPERATORS_INDEXOF = 'index of %1 in %2';
+Blockly.Msg.OPERATORS_REPLACE = 'replace %1 in %2 with %3';
+Blockly.Msg.OPERATORS_REPLACE_HELLO_WORLD = 'Hello world!';
+Blockly.Msg.OPERATORS_REPLACE_WORLD = 'world';
+Blockly.Msg.OPERATORS_REPLACE_FELLOW_SCRATCHERS = 'fellow Scratchers';
+Blockly.Msg.OPERATORS_REPEAT = 'repeat %1 %2 times';
+Blockly.Msg.OPERATORS_CHANGECASE = 'convert %1 to %2';
+Blockly.Msg.OPERATORS_LOWERCASE = 'lowercase';
+Blockly.Msg.OPERATORS_UPPERCASE = 'UPPERCASE';
+Blockly.Msg.OPERATORS_TRIM = 'trim %1';
 Blockly.Msg.OPERATORS_MOD = '%1 mod %2';
 Blockly.Msg.OPERATORS_PI = 'pi';
 Blockly.Msg.OPERATORS_NEWLINE = 'newline';
@@ -227,6 +238,18 @@ Blockly.Msg.OPERATORS_MATHOP_LN = 'ln';
 Blockly.Msg.OPERATORS_MATHOP_LOG = 'log';
 Blockly.Msg.OPERATORS_MATHOP_EEXP = 'e ^';
 Blockly.Msg.OPERATORS_MATHOP_10EXP = '10 ^';
+
+// Additional operators messages
+Blockly.Msg.OPERATORS_JOIN_LABEL = 'join';
+Blockly.Msg.OPERATORS_ADD_INPUT = 'Add input';
+Blockly.Msg.OPERATORS_REMOVE_INPUT = 'Remove input';
+Blockly.Msg.OPERATORS_CLAMP = 'clamp %1 between %2 and %3';
+Blockly.Msg.OPERATORS_MIN = 'min';
+Blockly.Msg.OPERATORS_MAX = 'max';
+Blockly.Msg.OPERATORS_AND_SEPARATOR = 'and';
+Blockly.Msg.OPERATORS_OR_SEPARATOR = 'or';
+Blockly.Msg.OPERATORS_MOD_SEPARATOR = 'mod';
+Blockly.Msg.OPERATORS_JS_LABEL = 'js';
 
 // Procedures blocks
 Blockly.Msg.PROCEDURES_DEFINITION = 'define %1';
@@ -282,6 +305,8 @@ Blockly.Msg.SENSING_DAYSSINCE2000 = 'days since 2000';
 Blockly.Msg.SENSING_ONLINE = 'online?';
 Blockly.Msg.SENSING_USERNAME = 'username';
 Blockly.Msg.SENSING_USERID = 'user id';
+Blockly.Msg.SENSING_STAGEWIDTH = 'stage width';
+Blockly.Msg.SENSING_STAGEHEIGHT = 'stage height';
 
 // Sound blocks
 Blockly.Msg.SOUND_PLAY = 'start sound %1';
@@ -297,6 +322,29 @@ Blockly.Msg.SOUND_SETVOLUMETO = 'set volume to %1%';
 Blockly.Msg.SOUND_VOLUME = 'volume';
 Blockly.Msg.SOUND_RECORD = 'record...';
 
+Blockly.Msg.ASSETS_MANAGE = 'Manage assets';
+Blockly.Msg.ASSETS_LOAD = 'load asset %1 as %2';
+Blockly.Msg.ASSETS_KIND_COSTUME = 'costume';
+Blockly.Msg.ASSETS_KIND_SOUND = 'sound';
+Blockly.Msg.ASSETS_UNLOAD = 'unload asset %1';
+Blockly.Msg.ASSETS_UNLOADALL = 'unload all assets';
+Blockly.Msg.ASSETS_GET = '%1 of asset %2';
+Blockly.Msg.ASSETS_PROPERTY_TEXT = 'text';
+Blockly.Msg.ASSETS_PROPERTY_DATAURI = 'data URI';
+Blockly.Msg.ASSETS_PROPERTY_BASE64 = 'base64';
+Blockly.Msg.ASSETS_PROPERTY_URL = 'URL';
+Blockly.Msg.ASSETS_PROPERTY_SIZE = 'size';
+Blockly.Msg.ASSETS_PROPERTY_FORMAT = 'format';
+Blockly.Msg.ASSETS_PROPERTY_FOLDER = 'folder';
+Blockly.Msg.ASSETS_BYTE = 'byte %1 of asset %2';
+Blockly.Msg.ASSETS_CHECK = 'asset %1 %2?';
+Blockly.Msg.ASSETS_STATE_EXISTS = 'exists';
+Blockly.Msg.ASSETS_STATE_LOADED = 'is loaded';
+Blockly.Msg.ASSETS_SET = 'set asset %1 to %2 as %3';
+Blockly.Msg.ASSETS_DELETE = 'delete asset %1';
+Blockly.Msg.ASSETS_ALLNAMES = 'all asset names';
+Blockly.Msg.ASSETS_INFOLDER = 'assets in folder %1';
+
 // Category labels
 Blockly.Msg.CATEGORY_MOTION = 'Motion';
 Blockly.Msg.CATEGORY_LOOKS = 'Looks';
@@ -305,8 +353,10 @@ Blockly.Msg.CATEGORY_EVENTS = 'Events';
 Blockly.Msg.CATEGORY_CONTROL = 'Control';
 Blockly.Msg.CATEGORY_SENSING = 'Sensing';
 Blockly.Msg.CATEGORY_OPERATORS = 'Operators';
+Blockly.Msg.CATEGORY_STRINGS = 'Strings';
 Blockly.Msg.CATEGORY_VARIABLES = 'Variables';
 Blockly.Msg.CATEGORY_MYBLOCKS = 'My Blocks';
+Blockly.Msg.CATEGORY_ASSETS = 'Assets';
 
 // Context menus
 Blockly.Msg.DUPLICATE = 'Duplicate';
@@ -317,6 +367,12 @@ Blockly.Msg.DELETE_BLOCK = 'Delete Block';
 Blockly.Msg.DELETE_X_BLOCKS = 'Delete %1 Blocks';
 Blockly.Msg.DELETE_ALL_BLOCKS = 'Delete all %1 blocks?';
 Blockly.Msg.CLEAN_UP = 'Clean up Blocks';
+Blockly.Msg.ADD_FRAME = 'Add Frame';
+Blockly.Msg.RENAME_FRAME = 'Rename Frame';
+Blockly.Msg.DELETE_FRAME = 'Delete Frame';
+Blockly.Msg.COLLAPSE_FRAME = 'Collapse Frame';
+Blockly.Msg.EXPAND_FRAME = 'Expand Frame';
+Blockly.Msg.FRAME_DEFAULT_TITLE = 'Frame';
 Blockly.Msg.HELP = 'Help';
 Blockly.Msg.UNDO = 'Undo';
 Blockly.Msg.REDO = 'Redo';
@@ -349,6 +405,7 @@ Blockly.Msg.DELETE_VARIABLE = 'Delete the "%1" variable';
 Blockly.Msg.NEW_PROCEDURE = 'Make a Block';
 Blockly.Msg.PROCEDURE_ALREADY_EXISTS = 'A procedure named "%1" already exists.';
 Blockly.Msg.PROCEDURE_DEFAULT_NAME = 'block name';
+Blockly.Msg.PROCEDURE_GLOBAL_PREFIX = '[Global]';
 Blockly.Msg.PROCEDURE_USED = 'To delete a block definition, first remove all uses of the block';
 
 // Lists
@@ -364,6 +421,10 @@ Blockly.Msg.DELETE_LIST = 'Delete the "%1" list';
 Blockly.Msg.RENAME_LIST = 'Rename list';
 
 // Broadcast Messages
+// Workspace menu
+Blockly.Msg.COLLAPSE_ALL = 'Collapse All';
+Blockly.Msg.EXPAND_ALL = 'Expand All';
+
 // @todo Remove these once fully managed by Scratch VM / Scratch GUI
 Blockly.Msg.NEW_BROADCAST_MESSAGE = 'New message';
 Blockly.Msg.NEW_BROADCAST_MESSAGE_TITLE = 'New message name:';

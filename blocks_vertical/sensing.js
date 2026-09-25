@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @license
  * Visual Blocks Editor
  *
@@ -551,6 +551,26 @@ Blockly.Blocks['sensing_userid'] = {
   init: function() {
     this.jsonInit({
       "message0": Blockly.Msg.SENSING_USERID,
+      "category": Blockly.Categories.sensing,
+      "extensions": ["colours_sensing", "output_number"]
+    });
+  }
+};
+
+Blockly.Blocks['sensing_stagewidth'] = {
+  init: function() {
+    this.jsonInit({
+      "message0": Blockly.Msg.SENSING_STAGEWIDTH,
+      "category": Blockly.Categories.sensing,
+      "extensions": ["colours_sensing", "output_number"]
+    });
+  }
+};
+
+Blockly.Blocks['sensing_stageheight'] = {
+  init: function() {
+    this.jsonInit({
+      "message0": Blockly.Msg.SENSING_STAGEHEIGHT,
       "category": Blockly.Categories.sensing,
       "extensions": ["colours_sensing", "output_number"]
     });

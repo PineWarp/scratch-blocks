@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @license
  * Visual Blocks Editor
  *
@@ -66,40 +66,6 @@ Blockly.Blocks.defaultToolbox = '<xml id="toolbox-categories" style="display: no
     '<block type="motion_pointtowards" id="motion_pointtowards">' +
       '<value name="TOWARDS">' +
         '<shadow type="motion_pointtowards_menu">' +
-        '</shadow>' +
-      '</value>' +
-    '</block>' +
-    '<block type="motion_pointtowards_xy" id="motion_pointtowards_xy">' +
-      '<value name="X">' +
-        '<shadow id="pointx" type="math_number">' +
-          '<field name="NUM">0</field>' +
-        '</shadow>' +
-      '</value>' +
-      '<value name="Y">' +
-        '<shadow id="pointy" type="math_number">' +
-          '<field name="NUM">0</field>' +
-        '</shadow>' +
-      '</value>' +
-    '</block>' +
-    '<block type="motion_pointtowards_xyfrom" id="motion_pointtowards_xyfrom">' +
-      '<value name="X">' +
-        '<shadow id="pointx" type="math_number">' +
-          '<field name="NUM">0</field>' +
-        '</shadow>' +
-      '</value>' +
-      '<value name="Y">' +
-        '<shadow id="pointy" type="math_number">' +
-          '<field name="NUM">0</field>' +
-        '</shadow>' +
-      '</value>' +
-      '<value name="FROMX">' +
-        '<shadow id="pointx" type="math_number">' +
-          '<field name="NUM">0</field>' +
-        '</shadow>' +
-      '</value>' +
-      '<value name="FROMY">' +
-        '<shadow id="pointy" type="math_number">' +
-          '<field name="NUM">0</field>' +
         '</shadow>' +
       '</value>' +
     '</block>' +
@@ -335,31 +301,29 @@ Blockly.Blocks.defaultToolbox = '<xml id="toolbox-categories" style="display: no
     '<block type="control_if_else" id="control_if_else"></block>' +
     '<block type="control_wait_until" id="control_wait_until"></block>' +
     '<block type="control_repeat_until" id="control_repeat_until"></block>' +
-    '<block id="for_each" type="control_for_each"></block>' +
     '<block type="control_switch" id="control_switch">' +
       '<value name="VALUE">' +
         '<shadow type="text">' +
-          '<field name="TEXT"></field>' +
+          '<field name="TEXT">value</field>' +
         '</shadow>' +
       '</value>' +
     '</block>' +
     '<block type="control_case" id="control_case">' +
       '<value name="VALUE">' +
         '<shadow type="text">' +
-          '<field name="TEXT"></field>' +
+          '<field name="TEXT">case</field>' +
         '</shadow>' +
       '</value>' +
     '</block>' +
     '<block type="control_case_fallthrough" id="control_case_fallthrough">' +
       '<value name="VALUE">' +
         '<shadow type="text">' +
-          '<field name="TEXT"></field>' +
+          '<field name="TEXT">case</field>' +
         '</shadow>' +
       '</value>' +
     '</block>' +
     '<block type="control_default" id="control_default"></block>' +
     '<block type="control_break" id="control_break"></block>' +
-    '<block type="control_continue" id="control_continue"></block>' +
     '<block type="control_stop" id="control_stop"></block>' +
     '<block type="control_start_as_clone" id="control_start_as_clone"></block>' +
     '<block type="control_create_clone_of" id="control_create_clone_of">' +
@@ -413,7 +377,7 @@ Blockly.Blocks.defaultToolbox = '<xml id="toolbox-categories" style="display: no
     '<block type="sensing_current" id="sensing_current"></block>' +
     '<block type="sensing_dayssince2000" id="sensing_dayssince2000"></block>' +
   '</category>' +
-  '<category name="%{BKY_CATEGORY_OPERATORS}" id="operators" colour="#40BF4A" secondaryColour="#389438">' +
+  '<category name="%{BKY_CATEGORY_OPERATORS}" id="operators" colour="#59C059" secondaryColour="#46B946">' +
     '<block type="operator_add" id="operator_add">' +
       '<value name="NUM1">' +
         '<shadow type="math_number">' +

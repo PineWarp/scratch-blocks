@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @license
  * Visual Blocks Editor
  *
@@ -33,6 +33,7 @@ goog.require('Blockly.ConnectionDB');
 goog.require('Blockly.constants');
 goog.require('Blockly.DataCategory');
 goog.require('Blockly.DropDownDiv');
+goog.require('Blockly.Frame');
 goog.require('Blockly.Events.BlockCreate');
 goog.require('Blockly.Gesture');
 goog.require('Blockly.Grid');
@@ -116,6 +117,10 @@ Blockly.WorkspaceSvg = function(options, opt_blockDragSurface, opt_wsDragSurface
       Blockly.DataCategory);
   this.registerToolboxCategoryCallback(Blockly.PROCEDURE_CATEGORY_NAME,
       Blockly.Procedures.flyoutCategory);
+
+  // Keep frames wrapped around the blocks that sit inside them. This is a
+  // no-op on workspaces that have no frames, such as the flyout.
+  this.addChangeListener(Blockly.Frame.onWorkspaceChange.bind(null, this));
 
   this.procedureReturnsEnabled = Blockly.Procedures.DEFAULT_ENABLE_RETURNS;
   this.initialProcedureReturnTypes_ = null;
@@ -480,6 +485,21 @@ Blockly.WorkspaceSvg.prototype.createDom = function(opt_backgroundClass) {
 
   this.intersectionObserver = new Blockly.IntersectionObserver(this);
 
+  /**
+   * Blocks the VM says are running. Kept by id rather than on the blocks, so a
+   * script that is not rendered right now comes back glowing when it is.
+   * @type {!Object}
+   * @private
+   */
+  this.glowingBlockIds_ = Object.create(null);
+
+  /**
+   * Stacks the VM says are running, by the id of the block they start with.
+   * @type {!Object}
+   * @private
+   */
+  this.glowingStackIds_ = Object.create(null);
+
   // Determine if there needs to be a category tree, or a simple list of
   // blocks.  This cannot be changed later, since the UI is very different.
   if (this.options.hasCategories) {
@@ -503,6 +523,7 @@ Blockly.WorkspaceSvg.prototype.createDom = function(opt_backgroundClass) {
 Blockly.WorkspaceSvg.prototype.dispose = function() {
   // Stop rerendering.
   this.rendered = false;
+  this.cancelDeferredRender();
   if (this.currentGesture_) {
     this.currentGesture_.cancel();
   }
@@ -696,6 +717,39 @@ Blockly.WorkspaceSvg.prototype.queueIntersectionCheck = function() {
   if (this.intersectionObserver) {
     this.intersectionObserver.queueIntersectionCheck();
   }
+  // The viewport moved, so scripts near it may need rendering now. Everything
+  // that scrolls, zooms or resizes the workspace comes through here.
+  if (this.wakeVirtualScripts_) {
+    this.wakeVirtualScripts_();
+  }
+};
+
+/**
+ * Render every script that is currently only a placeholder. Anything that acts
+ * on the whole workspace at once has to call this first: the workspace only
+ * renders the scripts you are looking at.
+ */
+Blockly.WorkspaceSvg.prototype.materializeAllScripts = function() {
+  // Replaced by the virtual script loader while it has scripts in hand.
+};
+
+/**
+ * The number of blocks the workspace holds, including the ones in scripts that
+ * are not currently rendered. Shadow blocks are not counted.
+ * @return {number} Block count.
+ */
+Blockly.WorkspaceSvg.prototype.getTotalBlockCount = function() {
+  var count = 0;
+  var blocks = this.getAllBlocks();
+  for (var i = 0; i < blocks.length; i++) {
+    if (!blocks[i].isShadow()) {
+      count++;
+    }
+  }
+  if (this.getUnloadedBlockCount) {
+    count += this.getUnloadedBlockCount();
+  }
+  return count;
 };
 
 /**
@@ -1053,14 +1107,39 @@ Blockly.WorkspaceSvg.prototype.highlightBlock = function(id, opt_state) {
  * @param {boolean} isGlowingBlock Whether to glow the block.
  */
 Blockly.WorkspaceSvg.prototype.glowBlock = function(id, isGlowingBlock) {
-  var block = null;
-  if (id) {
-    block = this.getBlockById(id);
-    if (!block) {
-      throw 'Tried to glow block that does not exist.';
+  if (!id) {
+    throw 'Tried to glow block that does not exist.';
+  }
+  // Remember it either way: the block may not be rendered right now, and it has
+  // to come back glowing when it is.
+  if (isGlowingBlock) {
+    this.glowingBlockIds_[id] = true;
+  } else {
+    delete this.glowingBlockIds_[id];
+  }
+  var block = this.getBlockById(id);
+  if (block) {
+    block.setGlowBlock(isGlowingBlock);
+  }
+};
+
+/**
+ * Re-apply the glows that belong to a block and its children, for a script that
+ * has just been rendered.
+ * @param {!Blockly.BlockSvg} topBlock The root of the script.
+ * @package
+ */
+Blockly.WorkspaceSvg.prototype.restoreGlows = function(topBlock) {
+  var blocks = topBlock.getDescendants(false);
+  for (var i = 0; i < blocks.length; i++) {
+    var block = blocks[i];
+    if (this.glowingBlockIds_[block.id]) {
+      block.setGlowBlock(true);
+    }
+    if (this.glowingStackIds_[block.id]) {
+      block.setGlowStack(true);
     }
   }
-  block.setGlowBlock(isGlowingBlock);
 };
 
 /**
@@ -1069,14 +1148,18 @@ Blockly.WorkspaceSvg.prototype.glowBlock = function(id, isGlowingBlock) {
  * @param {boolean} isGlowingStack Whether to glow the stack.
  */
 Blockly.WorkspaceSvg.prototype.glowStack = function(id, isGlowingStack) {
-  var block = null;
-  if (id) {
-    block = this.getBlockById(id);
-    if (!block) {
-      throw 'Tried to glow stack on block that does not exist.';
-    }
+  if (!id) {
+    throw 'Tried to glow stack on block that does not exist.';
   }
-  block.setGlowStack(isGlowingStack);
+  if (isGlowingStack) {
+    this.glowingStackIds_[id] = true;
+  } else {
+    delete this.glowingStackIds_[id];
+  }
+  var block = this.getBlockById(id);
+  if (block) {
+    block.setGlowStack(isGlowingStack);
+  }
 };
 
 /**
@@ -1419,6 +1502,18 @@ Blockly.WorkspaceSvg.prototype.isDragging = function() {
  * Is this workspace draggable and scrollable?
  * @return {boolean} True if this workspace may be dragged.
  */
+Blockly.WorkspaceSvg.prototype.deferredRenderActive = false;
+
+/**
+ * Cancel an in-progress deferred (lazy) render, if any.
+ * @package
+ */
+Blockly.WorkspaceSvg.prototype.cancelDeferredRender = function() {
+  if (this.deferredRenderHandle_) {
+    this.deferredRenderHandle_.cancel();
+  }
+};
+
 Blockly.WorkspaceSvg.prototype.isDraggable = function() {
   return !!this.scrollbar;
 };
@@ -1480,9 +1575,18 @@ Blockly.WorkspaceSvg.prototype.onMouseWheel_ = function(e) {
 Blockly.WorkspaceSvg.prototype.getBlocksBoundingBox = function() {
   var topBlocks = this.getTopBlocks(false);
   var topComments = this.getTopComments(false);
-  var topElements = topBlocks.concat(topComments);
+  var topElements = topBlocks.concat(topComments).concat(this.getTopFrames());
+  var deferredBounds = this.deferredContentBounds_;
   // There are no blocks, return empty rectangle.
   if (!topElements.length) {
+    if (deferredBounds) {
+      return {
+        x: deferredBounds.left,
+        y: deferredBounds.top,
+        width: deferredBounds.right - deferredBounds.left,
+        height: deferredBounds.bottom - deferredBounds.top
+      };
+    }
     return {x: 0, y: 0, width: 0, height: 0};
   }
 
@@ -1505,6 +1609,12 @@ Blockly.WorkspaceSvg.prototype.getBlocksBoundingBox = function() {
       boundary.bottomRight.y = blockBoundary.bottomRight.y;
     }
   }
+  if (deferredBounds) {
+    boundary.topLeft.x = Math.min(boundary.topLeft.x, deferredBounds.left);
+    boundary.topLeft.y = Math.min(boundary.topLeft.y, deferredBounds.top);
+    boundary.bottomRight.x = Math.max(boundary.bottomRight.x, deferredBounds.right);
+    boundary.bottomRight.y = Math.max(boundary.bottomRight.y, deferredBounds.bottom);
+  }
   return {
     x: boundary.topLeft.x,
     y: boundary.topLeft.y,
@@ -1514,22 +1624,181 @@ Blockly.WorkspaceSvg.prototype.getBlocksBoundingBox = function() {
 };
 
 /**
- * Clean up the workspace by ordering all the blocks in a column.
+ * Group the workspace's contents into the things that tidying moves around: a
+ * frame together with everything sitting inside it, and every block that is not
+ * in a frame. A frame and its scripts move as one, so that tidying never shakes
+ * the scripts out of their frame.
+ * @return {!Array.<!{frames: !Array.<!Blockly.Frame>,
+ *     blocks: !Array.<!Blockly.BlockSvg>}>} The units, in no particular order.
+ * @private
+ */
+Blockly.WorkspaceSvg.prototype.getCleanUpUnits_ = function() {
+  var frames = this.getTopFrames();
+  var framedBlocks = Object.create(null);
+  for (var i = 0; i < frames.length; i++) {
+    var members = frames[i].getMembers();
+    for (var j = 0; j < members.length; j++) {
+      framedBlocks[members[j].id] = true;
+    }
+  }
+
+  // A frame sitting inside another frame travels with it, so only frames that
+  // are not inside any other frame start a unit of their own.
+  var parents = Object.create(null);
+  for (i = 0; i < frames.length; i++) {
+    for (j = 0; j < frames.length; j++) {
+      var other = frames[j];
+      if (other != frames[i] && other.containsPoint(frames[i].getXY())) {
+        var parent = parents[frames[i].id];
+        if (!parent || other.getWidth() * other.getHeight() <
+            parent.getWidth() * parent.getHeight()) {
+          parents[frames[i].id] = other;
+        }
+      }
+    }
+  }
+
+  var units = [];
+  var self = this;
+  var gather = function(frame, unit) {
+    unit.frames.push(frame);
+    unit.blocks = unit.blocks.concat(frame.getMembers());
+    var all = self.getTopFrames();
+    for (var k = 0; k < all.length; k++) {
+      if (parents[all[k].id] == frame) {
+        gather(all[k], unit);
+      }
+    }
+    return unit;
+  };
+  for (i = 0; i < frames.length; i++) {
+    if (!parents[frames[i].id]) {
+      units.push(gather(frames[i], {frames: [], blocks: []}));
+    }
+  }
+
+  var topBlocks = this.getTopBlocks(false);
+  for (i = 0; i < topBlocks.length; i++) {
+    if (!framedBlocks[topBlocks[i].id]) {
+      units.push({frames: [], blocks: [topBlocks[i]]});
+    }
+  }
+  return units;
+};
+
+/**
+ * The rectangle a clean up unit covers, ignoring blocks that a collapsed frame
+ * is hiding.
+ * @param {!{frames: !Array.<!Blockly.Frame>,
+ *     blocks: !Array.<!Blockly.BlockSvg>}} unit The unit to measure.
+ * @return {!{left: number, top: number, bottom: number}} The unit's bounds.
+ * @private
+ */
+Blockly.WorkspaceSvg.prototype.getCleanUpUnitBounds_ = function(unit) {
+  var left = Infinity;
+  var top = Infinity;
+  var bottom = -Infinity;
+  var add = function(rect) {
+    left = Math.min(left, rect.topLeft.x);
+    top = Math.min(top, rect.topLeft.y);
+    bottom = Math.max(bottom, rect.bottomRight.y);
+  };
+  for (var i = 0; i < unit.frames.length; i++) {
+    add(unit.frames[i].getBoundingRectangle());
+  }
+  for (var j = 0; j < unit.blocks.length; j++) {
+    var block = unit.blocks[j];
+    if (block.getSvgRoot().style.display != 'none') {
+      add(block.getBoundingRectangle());
+    }
+  }
+  return {left: left, top: top, bottom: bottom};
+};
+
+/**
+ * Clean up the workspace. Instead of stacking every script into a single column,
+ * PineEditor groups scripts by their top "hat" block (event type) so that e.g.
+ * all green-flag scripts sit on one row, all broadcast scripts on another.
  */
 Blockly.WorkspaceSvg.prototype.cleanUp = function() {
+  // Tidying only the scripts that happen to be rendered would pile them on top
+  // of the ones that are not.
+  if (this.materializeAllScripts) {
+    this.materializeAllScripts();
+  }
   this.setResizesEnabled(false);
   Blockly.Events.setGroup(true);
-  var topBlocks = this.getTopBlocks(true);
-  var cursorY = 0;
-  for (var i = 0, block; block = topBlocks[i]; i++) {
-    var xy = block.getRelativeToSurfaceXY();
-    block.moveBy(-xy.x, cursorY - xy.y);
-    block.snapToGrid();
-    cursorY = block.getRelativeToSurfaceXY().y +
-        block.getHeightWidth().height + Blockly.BlockSvg.MIN_BLOCK_Y;
+
+  var units = this.getCleanUpUnits_();
+  for (var i = 0; i < units.length; i++) {
+    units[i].bounds = this.getCleanUpUnitBounds_(units[i]);
   }
+
+  // ---- PineEditor: group scripts by their hat/event type, one row per type. ----
+  var classify = function(op) {
+    var map = {
+      event_whenflagclicked: 'greenFlag_',
+      event_whenbroadcastreceived: 'broadcast_',
+      event_whenkeypressed: 'key_',
+      event_whenthisspriteclicked: 'click_',
+      event_whenbackdropswitchesto: 'backdrop_',
+      control_start_as_clone: 'clone_'
+    };
+    if (map[op]) return map[op];
+    if (op && op.indexOf('event_') === 0) return 'otherEvent_';
+    if (op === 'control_whenflagclicked') return 'greenFlag_';
+    return 'misc_';
+  };
+  var ORDER = {
+    greenFlag_: 0, broadcast_: 1, key_: 2, click_: 3,
+    backdrop_: 4, clone_: 5, otherEvent_: 6, misc_: 7
+  };
+
+  var groups = [];
+  var groupByKey = Object.create(null);
+  for (i = 0; i < units.length; i++) {
+    var unit = units[i];
+    var op = (unit.frames.length === 0 && unit.blocks[0]) ? unit.blocks[0].type : null;
+    var key = classify(op);
+    if (!groupByKey[key]) {
+      groupByKey[key] = {key: key, units: [], maxH: 0};
+      groups.push(groupByKey[key]);
+    }
+    groupByKey[key].units.push(unit);
+  }
+  groups.sort(function(a, b) {
+    return (ORDER[a.key] - ORDER[b.key]);
+  });
+
+  var cursorY = 0;
+  for (i = 0; i < groups.length; i++) {
+    var group = groups[i];
+    var cursorX = 0;
+    for (var j = 0; j < group.units.length; j++) {
+      var gUnit = group.units[j];
+      var dx = cursorX - gUnit.bounds.left;
+      var dy = cursorY - gUnit.bounds.top;
+      for (var k = 0; k < gUnit.frames.length; k++) {
+        gUnit.frames[k].moveBy(dx, dy);
+      }
+      for (k = 0; k < gUnit.blocks.length; k++) {
+        gUnit.blocks[k].moveBy(dx, dy);
+      }
+      var h = gUnit.bounds.bottom + dy - cursorY;
+      if (gUnit.frames.length) {
+        // Tidy the whole frame as one horizontal group; member scripts already
+        // move with their frame so no extra height bookkeeping is needed here.
+        h = gUnit.bounds.bottom + dy - cursorY;
+      }
+      if (h > group.maxH) group.maxH = h;
+      cursorX += (gUnit.bounds.right - gUnit.bounds.left) + Blockly.BlockSvg.MIN_BLOCK_Y;
+    }
+    cursorY += group.maxH + Blockly.BlockSvg.MIN_BLOCK_Y;
+  }
+
   Blockly.Events.setGroup(false);
   this.setResizesEnabled(true);
+  this.resizeContents();
 };
 
 /**
@@ -1583,8 +1852,12 @@ Blockly.WorkspaceSvg.prototype.showContextMenu_ = function(e) {
     menuOptions.push(Blockly.ContextMenu.workspaceCommentOption(ws, e));
   }
 
+  // Option to add a frame.
+  menuOptions.push(Blockly.ContextMenu.workspaceFrameOption(ws, e));
+
   // Option to delete all blocks.
-  // Count the number of blocks that are deletable.
+  // Count the number of blocks that are deletable. Scripts that are not
+  // rendered still count: they are part of the sprite either way.
   var deleteList = Blockly.WorkspaceSvg.buildDeleteList_(topBlocks);
   // Scratch-specific: don't count shadow blocks in delete count
   var deleteCount = 0;
@@ -1592,6 +1865,9 @@ Blockly.WorkspaceSvg.prototype.showContextMenu_ = function(e) {
     if (!deleteList[i].isShadow()) {
       deleteCount++;
     }
+  }
+  if (ws.getUnloadedBlockCount) {
+    deleteCount += ws.getUnloadedBlockCount();
   }
 
   var DELAY = 10;
@@ -1608,6 +1884,15 @@ Blockly.WorkspaceSvg.prototype.showContextMenu_ = function(e) {
     }
     Blockly.Events.setGroup(false);
   }
+  // Deleting means deleting all of it, so the unrendered scripts have to exist
+  // as blocks before the delete list is built.
+  function deleteAll() {
+    if (ws.materializeAllScripts) {
+      ws.materializeAllScripts();
+    }
+    deleteList = Blockly.WorkspaceSvg.buildDeleteList_(ws.getTopBlocks(true));
+    deleteNext();
+  }
 
   var deleteOption = {
     text: deleteCount == 1 ? Blockly.Msg.DELETE_BLOCK :
@@ -1618,13 +1903,13 @@ Blockly.WorkspaceSvg.prototype.showContextMenu_ = function(e) {
         ws.currentGesture_.cancel();
       }
       if (deleteCount < 2 ) {
-        deleteNext();
+        deleteAll();
       } else {
         Blockly.confirm(
             Blockly.Msg.DELETE_ALL_BLOCKS.replace('%1', String(deleteCount)),
             function(ok) {
               if (ok) {
-                deleteNext();
+                deleteAll();
               }
             });
       }
@@ -2217,8 +2502,34 @@ Blockly.WorkspaceSvg.prototype.setToolboxRefreshEnabled = function(enabled) {
  * Dispose of all blocks in workspace, with an optimization to prevent resizes.
  */
 Blockly.WorkspaceSvg.prototype.clear = function() {
+  this.cancelDeferredRender();
+  this.glowingBlockIds_ = Object.create(null);
+  this.glowingStackIds_ = Object.create(null);
   this.setResizesEnabled(false);
+  if (this.intersectionObserver) {
+    this.intersectionObserver.unobserveAll();
+  }
+  var dbList = this.connectionDBList;
+  if (dbList) {
+    for (var i = 0; i < dbList.length; i++) {
+      if (dbList[i]) {
+        dbList[i].bulkClear_ = true;
+      }
+    }
+  }
   Blockly.WorkspaceSvg.superClass_.clear.call(this);
+  if (dbList) {
+    for (var i = 0; i < dbList.length; i++) {
+      if (dbList[i]) {
+        dbList[i].connections_.length = 0;
+        dbList[i].bulkClear_ = false;
+      }
+    }
+  }
+  var canvas = this.getCanvas();
+  if (canvas) {
+    goog.dom.removeChildren(canvas);
+  }
   this.setResizesEnabled(true);
 };
 

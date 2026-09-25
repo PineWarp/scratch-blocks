@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @license
  * Visual Blocks Editor
  *
@@ -52,6 +52,7 @@ goog.require('Blockly.FieldNumberDropdown');
 goog.require('Blockly.FieldMatrix');
 goog.require('Blockly.FieldVariable');
 goog.require('Blockly.FieldVerticalSeparator');
+goog.require('Blockly.Frame');
 goog.require('Blockly.Generator');
 goog.require('Blockly.Msg');
 goog.require('Blockly.Procedures');

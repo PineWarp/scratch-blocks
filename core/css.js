@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @license
  * Visual Blocks Editor
  *
@@ -385,6 +385,12 @@ Blockly.Css.CONTENT = [
     'stroke-width: 1px;',
   '}',
 
+  '.blocklyScriptPlaceholder {',
+    'fill: rgba(127, 127, 127, 0.12);',
+    'stroke: rgba(127, 127, 127, 0.25);',
+    'stroke-dasharray: 6 4;',
+  '}',
+
   '.blocklySelected>.blocklyPath {',
     // 'stroke: #fc3;',
     // 'stroke-width: 3px;',
@@ -677,6 +683,29 @@ Blockly.Css.CONTENT = [
   '.scratchCommentTopBar {',
     'fill: #000000;',
     'fill-opacity: 0.1',
+  '}',
+
+  '.blocklyFrameIcon {',
+    'cursor: pointer;',
+  '}',
+
+  '.blocklyFrameTitle {',
+    'pointer-events: none;',
+    'user-select: none;',
+  '}',
+
+  '.blocklyFrameForeignObject body {',
+    'background: none;',
+    'margin: 0;',
+  '}',
+
+  '.blocklyFrameTitleInput {',
+    'background: none;',
+    'border: none;',
+    'outline: none;',
+    'padding: 0;',
+    'width: 100%;',
+    'height: 32px;',
   '}',
 
   '.scratchCommentText {',

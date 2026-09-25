@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @license
  * Visual Blocks Editor
  *
@@ -663,4 +663,170 @@ Blockly.Constants.Data.DELETE_OPTION_CALLBACK_FACTORY = function(block,
     var variable = block.getField(fieldName).getVariable();
     workspace.deleteVariableById(variable.getId());
   };
+};
+
+/**
+ * PineEditor: Report the nesting depth (dimensions) of a list.
+ */
+Blockly.Blocks['pine_list_dims'] = {
+  init: function() {
+    this.jsonInit({
+      "message0": '%1 的维度',
+      "args0": [
+        {
+          "type": "field_variable",
+          "name": "LIST",
+          "variableTypes": [Blockly.LIST_VARIABLE_TYPE]
+        }
+      ],
+      "category": Blockly.Categories.dataLists,
+      "extensions": ["colours_data_lists", "output_number"]
+    });
+  }
+};
+
+/**
+ * PineEditor: Report the value at row/col of a 2D list.
+ */
+Blockly.Blocks['pine_list_get2d'] = {
+  init: function() {
+    this.jsonInit({
+      "message0": '%1 的第 %2 行第 %3 列的项',
+      "args0": [
+        {
+          "type": "field_variable",
+          "name": "LIST",
+          "variableTypes": [Blockly.LIST_VARIABLE_TYPE]
+        },
+        {"type": "input_value", "name": "ROW"},
+        {"type": "input_value", "name": "COL"}
+      ],
+      "output": null,
+      "category": Blockly.Categories.dataLists,
+      "extensions": ["colours_data_lists"],
+      "outputShape": Blockly.OUTPUT_SHAPE_ROUND
+    });
+  }
+};
+
+/**
+ * PineEditor: Set the value at row/col of a 2D list.
+ */
+Blockly.Blocks['pine_list_set2d'] = {
+  init: function() {
+    this.jsonInit({
+      "message0": '将 %1 的第 %2 行第 %3 列设为 %4',
+      "args0": [
+        {
+          "type": "field_variable",
+          "name": "LIST",
+          "variableTypes": [Blockly.LIST_VARIABLE_TYPE]
+        },
+        {"type": "input_value", "name": "ROW"},
+        {"type": "input_value", "name": "COL"},
+        {"type": "input_value", "name": "VALUE"}
+      ],
+      "previousStatement": null,
+      "nextStatement": null,
+      "category": Blockly.Categories.dataLists,
+      "extensions": ["colours_data_lists"]
+    });
+  }
+};
+
+/**
+ * PineEditor: Report the value at a path (comma-separated 1-based indices) into a multi-dimensional list.
+ */
+Blockly.Blocks['pine_list_getpath'] = {
+  init: function() {
+    this.jsonInit({
+      "message0": '%1 路径 %2 处的项',
+      "args0": [
+        {
+          "type": "field_variable",
+          "name": "LIST",
+          "variableTypes": [Blockly.LIST_VARIABLE_TYPE]
+        },
+        {"type": "input_value", "name": "PATH"}
+      ],
+      "output": null,
+      "category": Blockly.Categories.dataLists,
+      "extensions": ["colours_data_lists"],
+      "outputShape": Blockly.OUTPUT_SHAPE_ROUND
+    });
+  }
+};
+
+/**
+ * PineEditor: Set the value at a path into a multi-dimensional list.
+ */
+Blockly.Blocks['pine_list_setpath'] = {
+  init: function() {
+    this.jsonInit({
+      "message0": '将 %1 路径 %2 处设为 %3',
+      "args0": [
+        {
+          "type": "field_variable",
+          "name": "LIST",
+          "variableTypes": [Blockly.LIST_VARIABLE_TYPE]
+        },
+        {"type": "input_value", "name": "PATH"},
+        {"type": "input_value", "name": "VALUE"}
+      ],
+      "previousStatement": null,
+      "nextStatement": null,
+      "category": Blockly.Categories.dataLists,
+      "extensions": ["colours_data_lists"]
+    });
+  }
+};
+
+/**
+ * PineEditor: Reshape a list into a WIDTH x HEIGHT grid, filling gaps with a value.
+ */
+Blockly.Blocks['pine_list_create2d'] = {
+  init: function() {
+    this.jsonInit({
+      "message0": '将 %1 建成长 %2 宽 %3 、以 %4 填充的二维表',
+      "args0": [
+        {
+          "type": "field_variable",
+          "name": "LIST",
+          "variableTypes": [Blockly.LIST_VARIABLE_TYPE]
+        },
+        {"type": "input_value", "name": "ROWS"},
+        {"type": "input_value", "name": "COLS"},
+        {"type": "input_value", "name": "VALUE"}
+      ],
+      "previousStatement": null,
+      "nextStatement": null,
+      "category": Blockly.Categories.dataLists,
+      "extensions": ["colours_data_lists"]
+    });
+  }
+};
+
+/**
+ * PineEditor: Resize a list to WIDTH x HEIGHT, keeping existing values.
+ */
+Blockly.Blocks['pine_list_resize'] = {
+  init: function() {
+    this.jsonInit({
+      "message0": '将 %1 调整为长 %2 宽 %3 、缺项填 %4',
+      "args0": [
+        {
+          "type": "field_variable",
+          "name": "LIST",
+          "variableTypes": [Blockly.LIST_VARIABLE_TYPE]
+        },
+        {"type": "input_value", "name": "ROWS"},
+        {"type": "input_value", "name": "COLS"},
+        {"type": "input_value", "name": "VALUE"}
+      ],
+      "previousStatement": null,
+      "nextStatement": null,
+      "category": Blockly.Categories.dataLists,
+      "extensions": ["colours_data_lists"]
+    });
+  }
 };
