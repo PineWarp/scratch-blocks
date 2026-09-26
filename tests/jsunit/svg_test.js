@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @license
  * Blockly Tests
  *
@@ -79,4 +79,78 @@ function svgTest_newTwoFieldBlock() {
   block.initSvg();
   block.render(false);
   return block;
+}
+
+function testBooleanInputOnlyHidesMarkedToggleBlocks() {
+  var oldMainWorkspace = Blockly.mainWorkspace;
+  var oldOperatorNot = Blockly.Blocks['operator_not'];
+  svgTest_setUp();
+  try {
+    Blockly.Blocks['boolean_parent'] = {
+      init: function() {
+        this.appendValueInput('CONDITION').setCheck('Boolean');
+        this.setPreviousStatement(true);
+        this.setNextStatement(true);
+      }
+    };
+    Blockly.Blocks['operator_not'] = {
+      init: function() {
+        this.appendValueInput('OPERAND').setCheck('Boolean');
+        this.setOutput(true, 'Boolean');
+      }
+    };
+    var block = svgTest_workspace.newBlock('boolean_parent');
+    block.initSvg();
+    block.render(false);
+    var input = block.getInput('CONDITION');
+    var notBlock = svgTest_workspace.newBlock('operator_not');
+    notBlock.initSvg();
+    notBlock.render(false);
+    input.connection.connect(notBlock.outputConnection);
+    block.render(false);
+
+    assertFalse(block.isBooleanToggle_(input));
+    assertNotEquals('none', notBlock.getSvgRoot().getAttribute('display'));
+
+    notBlock.dispose(false, false);
+    var event = {stopPropagation: function() {}, preventDefault: function() {}};
+    block.toggleBooleanInput_(input, event);
+    var toggleBlock = input.connection.targetBlock();
+    assertEquals('operator_not', toggleBlock.type);
+    assertTrue(toggleBlock.booleanToggle_);
+    assertTrue(block.isBooleanToggle_(input));
+    assertEquals('visible', input.booleanToggleMark_.getAttribute('visibility'));
+    var xml = Blockly.Xml.domToText(Blockly.Xml.blockToDom(block));
+    assertContains('boolean-toggle="true"', xml);
+
+    block.toggleBooleanInput_(input, event);
+    assertFalse(input.connection.isConnected());
+  } finally {
+    svgTest_tearDown();
+    Blockly.mainWorkspace = oldMainWorkspace;
+    delete Blockly.Blocks['boolean_parent'];
+    if (oldOperatorNot) {
+      Blockly.Blocks['operator_not'] = oldOperatorNot;
+    } else {
+      delete Blockly.Blocks['operator_not'];
+    }
+  }
+}
+
+function testPatchingReporterAcceptsBooleanConnection() {
+  svgTest_setUp();
+  try {
+    Blockly.Blocks['boolean_parent'] = {
+      init: function() {
+        this.appendValueInput('CONDITION').setCheck('Boolean');
+      }
+    };
+    var parent = svgTest_workspace.newBlock('boolean_parent');
+    var patch = svgTest_workspace.newBlock('patching_jsreporter');
+    parent.getInput('CONDITION').connection.connect(patch.outputConnection);
+    assertEquals(patch, parent.getInput('CONDITION').connection.targetBlock());
+  } finally {
+    svgTest_tearDown();
+    delete Blockly.Blocks['boolean_parent'];
+  }
 }

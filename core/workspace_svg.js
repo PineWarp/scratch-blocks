@@ -1691,16 +1691,19 @@ Blockly.WorkspaceSvg.prototype.getCleanUpUnits_ = function() {
  * is hiding.
  * @param {!{frames: !Array.<!Blockly.Frame>,
  *     blocks: !Array.<!Blockly.BlockSvg>}} unit The unit to measure.
- * @return {!{left: number, top: number, bottom: number}} The unit's bounds.
+ * @return {!{left: number, top: number, right: number, bottom: number}} The
+ *     unit's bounds.
  * @private
  */
 Blockly.WorkspaceSvg.prototype.getCleanUpUnitBounds_ = function(unit) {
   var left = Infinity;
   var top = Infinity;
+  var right = -Infinity;
   var bottom = -Infinity;
   var add = function(rect) {
     left = Math.min(left, rect.topLeft.x);
     top = Math.min(top, rect.topLeft.y);
+    right = Math.max(right, rect.bottomRight.x);
     bottom = Math.max(bottom, rect.bottomRight.y);
   };
   for (var i = 0; i < unit.frames.length; i++) {
@@ -1712,13 +1715,14 @@ Blockly.WorkspaceSvg.prototype.getCleanUpUnitBounds_ = function(unit) {
       add(block.getBoundingRectangle());
     }
   }
-  return {left: left, top: top, bottom: bottom};
+  return {left: left, top: top, right: right, bottom: bottom};
 };
 
 /**
  * Clean up the workspace. Instead of stacking every script into a single column,
- * PineEditor groups scripts by their top "hat" block (event type) so that e.g.
+ * PineWarp groups scripts by their top "hat" block (event type) so that e.g.
  * all green-flag scripts sit on one row, all broadcast scripts on another.
+ * Frames keep the scripts they hold, and are tidied as a whole.
  */
 Blockly.WorkspaceSvg.prototype.cleanUp = function() {
   // Tidying only the scripts that happen to be rendered would pile them on top
@@ -1734,7 +1738,7 @@ Blockly.WorkspaceSvg.prototype.cleanUp = function() {
     units[i].bounds = this.getCleanUpUnitBounds_(units[i]);
   }
 
-  // ---- PineEditor: group scripts by their hat/event type, one row per type. ----
+  // ---- PineWarp: group scripts by their hat/event type, one row per type. ----
   var classify = function(op) {
     var map = {
       event_whenflagclicked: 'greenFlag_',
@@ -1784,12 +1788,12 @@ Blockly.WorkspaceSvg.prototype.cleanUp = function() {
       for (k = 0; k < gUnit.blocks.length; k++) {
         gUnit.blocks[k].moveBy(dx, dy);
       }
-      var h = gUnit.bounds.bottom + dy - cursorY;
-      if (gUnit.frames.length) {
-        // Tidy the whole frame as one horizontal group; member scripts already
-        // move with their frame so no extra height bookkeeping is needed here.
-        h = gUnit.bounds.bottom + dy - cursorY;
+      // Snapping a framed script would move it relative to its frame.
+      if (!gUnit.frames.length && gUnit.blocks[0]) {
+        gUnit.blocks[0].snapToGrid();
+        dy = gUnit.blocks[0].getRelativeToSurfaceXY().y - gUnit.bounds.top;
       }
+      var h = gUnit.bounds.bottom + dy - cursorY;
       if (h > group.maxH) group.maxH = h;
       cursorX += (gUnit.bounds.right - gUnit.bounds.left) + Blockly.BlockSvg.MIN_BLOCK_Y;
     }

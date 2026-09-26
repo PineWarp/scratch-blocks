@@ -37,3 +37,4 @@ python_compressed.js
 /chromedriver
 # --flagfiles used on Windows
 /*.config
+/temp

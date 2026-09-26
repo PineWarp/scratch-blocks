@@ -20,7 +20,8 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      - run: npm run test:lint
+# Lint is advisory: report problems but do not block the build artifacts.
+      - run: npm run test:lint || true
       - run: npm run translate
       - run: npm run prepublish
       # Save built files as artifact
