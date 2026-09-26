@@ -1,8 +1,8 @@
-# Bilup/scratch-blocks
+# PineWarp/scratch-blocks
 
 ## Playgrounds
 
- - **Vertical blocks**: https://bilup.github.io/scratch-blocks/tests/vertical_playground_compressed.html
+ - **Vertical blocks**: https://pinewarp.github.io/scratch-blocks/tests/vertical_playground_compressed.html
 
 ## Local development
 

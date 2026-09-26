@@ -2,12 +2,12 @@
   "name": "scratch-blocks",
   "version": "0.1.0",
   "description": "Scratch Blocks is a library for building creative computing interfaces.",
-  "author": "Bilup",
+  "author": "PineWarp",
   "license": "GPL-3.0",
-  "homepage": "https://github.com/Bilup/scratch-blocks#readme",
+  "homepage": "https://github.com/PineWarp/scratch-blocks#readme",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Bilup/scratch-blocks.git"
+    "url": "https://github.com/PineWarp/scratch-blocks.git"
   },
   "main": "./dist/vertical.js",
   "browser": "./shim/vertical.js",

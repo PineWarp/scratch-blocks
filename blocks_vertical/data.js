@@ -666,7 +666,7 @@ Blockly.Constants.Data.DELETE_OPTION_CALLBACK_FACTORY = function(block,
 };
 
 /**
- * PineEditor: Report the nesting depth (dimensions) of a list.
+ * PineWarp: Report the nesting depth (dimensions) of a list.
  */
 Blockly.Blocks['pine_list_dims'] = {
   init: function() {
@@ -686,7 +686,7 @@ Blockly.Blocks['pine_list_dims'] = {
 };
 
 /**
- * PineEditor: Report the value at row/col of a 2D list.
+ * PineWarp: Report the value at row/col of a 2D list.
  */
 Blockly.Blocks['pine_list_get2d'] = {
   init: function() {
@@ -710,7 +710,7 @@ Blockly.Blocks['pine_list_get2d'] = {
 };
 
 /**
- * PineEditor: Set the value at row/col of a 2D list.
+ * PineWarp: Set the value at row/col of a 2D list.
  */
 Blockly.Blocks['pine_list_set2d'] = {
   init: function() {
@@ -735,7 +735,7 @@ Blockly.Blocks['pine_list_set2d'] = {
 };
 
 /**
- * PineEditor: Report the value at a path (comma-separated 1-based indices) into a multi-dimensional list.
+ * PineWarp: Report the value at a path (comma-separated 1-based indices) into a multi-dimensional list.
  */
 Blockly.Blocks['pine_list_getpath'] = {
   init: function() {
@@ -758,7 +758,7 @@ Blockly.Blocks['pine_list_getpath'] = {
 };
 
 /**
- * PineEditor: Set the value at a path into a multi-dimensional list.
+ * PineWarp: Set the value at a path into a multi-dimensional list.
  */
 Blockly.Blocks['pine_list_setpath'] = {
   init: function() {
@@ -782,7 +782,7 @@ Blockly.Blocks['pine_list_setpath'] = {
 };
 
 /**
- * PineEditor: Reshape a list into a WIDTH x HEIGHT grid, filling gaps with a value.
+ * PineWarp: Reshape a list into a WIDTH x HEIGHT grid, filling gaps with a value.
  */
 Blockly.Blocks['pine_list_create2d'] = {
   init: function() {
@@ -807,7 +807,7 @@ Blockly.Blocks['pine_list_create2d'] = {
 };
 
 /**
- * PineEditor: Resize a list to WIDTH x HEIGHT, keeping existing values.
+ * PineWarp: Resize a list to WIDTH x HEIGHT, keeping existing values.
  */
 Blockly.Blocks['pine_list_resize'] = {
   init: function() {
